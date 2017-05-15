@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ikm_select_cert">Select Client Certificate</string>
+    <string name="ikm_client_cert"> requested a client certificate. Please select which certificate you want to use.</string>
+    <string name="ikm_cert_details">Server Certificate details:</string>
+    <string name="ikm_select_host">Select Hostname for Certificate</string>
+
+    <string name="ikm_decision_file">From File</string>
+    <string name="ikm_decision_keychain">From Device Key Manager</string>
+    <string name="ikm_decision_abort">Abort</string>
+    <string name="ikm_decision_all">Allow all Hosts</string>
+    <string name="ikm_decision_host">Allow this Host</string>
+
+    <string name="ikm_notification">Select Client Certificate</string>
+
+    <string name="ikm_read_keystore">Error reading keystore</string>
+    <string name="ikm_load_keystore">Error loading keystore</string>
+    <string name="ikm_found_keystore">Keystore file not found</string>
+    <string name="ikm_load_key">Error loading key </string>
+    <string name="ikm_keychain">KeyChain error</string>
+
+    <string name="ikm_select_keystore">Select keystore file</string>
+</resources>

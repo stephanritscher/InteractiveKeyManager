@@ -1,0 +1,46 @@
+# InteractiveKeyManager
+
+InteractiveKeyManager is a library which tries to simplify the use of client certificates for Android keystores.
+
+## Compatability
+For InteractiveKeyManager you need to provide your client keystore in Android's native format (BKS). For conversion from PKCS12 (which can be created using OpenSSL), you may use Java's keytool and [BouncyCastle](https://www.bouncycastle.org):
+
+    keytool -provider org.bouncycastle.jce.provider.BouncyCastleProvider -providerpath bcprov.jar -importkeystore -srckeystore cert.p12 -srcstoretype pkcs12 -destkeystore cert.bks -deststoretype bks
+
+## Limitations
+Currently InteractiveKeyManager only supports keystores with the password 'password'.
+
+## Integration
+
+Add to your settings.gradle:
+    include ':InteractiveKeyManager'
+
+Add to your projects build.gradle:
+    compile project(':InteractiveKeyManager')
+
+Add to your AndroidManifest.xml:
+    <!-- InteractiveKeyManager -->
+    <activity
+        android:name="de.ritscher.ssl.SelectKeyStoreActivity"
+        android:theme="@android:style/Theme.Holo.Light.Dialog.NoActionBar"/>
+and:
+    <!-- InteractiveKeyManager -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+Add to your main activity's init (example uses [MemorizingTrustManager](https://github.com/ge0rg/MemorizingTrustManager) and HttpsURLConnection - please adapt to your needs):
+    MemorizingTrustManager memorizingTrustManager = new MemorizingTrustManager(this);
+    InteractiveKeyManager km = new InteractiveKeyManager(this);
+    HostnameVerifier hostnameVerifier = memorizingTrustManager.wrapHostnameVerifier(OkHostnameVerifier.INSTANCE);
+    try {
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(new X509KeyManager[] {km}, new X509TrustManager[] {memorizingTrustManager}, null);
+        SSLContext.setDefault(sslContext);
+	/* 
+        HttpsURLConnection.setDefaultSSLSocketFactory(sslContext.getSocketFactory());
+        HttpsURLConnection.setDefaultHostnameVerifier(hostnameVerifier);
+    } catch (KeyManagementException | NoSuchAlgorithmException e) {
+        Logger.e("Error initializing TLS: " + e);
+    }
+
+## Attribution
+This project is inspirated (regarding idea and code) by [MemorizingTrustManager](https://github.com/ge0rg/MemorizingTrustManager). It can be used as complement to it when using TLS connections with self-signed certificate chains (PKI).
