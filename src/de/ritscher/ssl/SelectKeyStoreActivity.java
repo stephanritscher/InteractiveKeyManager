@@ -24,24 +24,30 @@
 package de.ritscher.ssl;
 
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.InputType;
 import android.util.Log;
 import android.widget.EditText;
 
 public class SelectKeyStoreActivity extends Activity
-        implements OnClickListener, OnCancelListener, KeyChainAliasCallback {
+        implements OnClickListener, OnCancelListener, KeyChainAliasCallback, ActivityCompat
+        .OnRequestPermissionsResultCallback  {
 
     private final static String TAG = "SelectKeyStoreActivity";
     private final static int KEYSTORE_INTENT = 1380421;
+    private final static int PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER = 1001;
 
     int decisionId;
 
@@ -116,12 +122,19 @@ public class SelectKeyStoreActivity extends Activity
         if (dialog == decisionDialog) {
             switch (btnId) {
                 case DialogInterface.BUTTON_POSITIVE:
-                    /* Start file chooser */
-                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                    intent.setType("file/*");
-                    intent.addCategory(Intent.CATEGORY_OPENABLE);
-                    startActivityForResult(Intent.createChooser(intent, this.getString(R.string
-                            .ikm_select_keystore)), KEYSTORE_INTENT);
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
+                            PackageManager.PERMISSION_GRANTED) {
+                        Log.d(TAG, "Requesting permission READ_EXTERNAL_STORAGE");
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER);
+                    } else {
+                        Log.d(TAG, "Verified permission READ_EXTERNAL_STORAGE");
+                        /* Permission callback invokes file chooser */
+                        onRequestPermissionsResult (PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER,
+                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                new int[]{PackageManager.PERMISSION_GRANTED});
+                    }
                     break;
                 case DialogInterface.BUTTON_NEUTRAL:
                     KeyChain.choosePrivateKeyAlias(this, this, null, null, null, -1, null);
@@ -152,6 +165,23 @@ public class SelectKeyStoreActivity extends Activity
         sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
     }
 
+    public void onRequestPermissionsResult (int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "Permission READ_EXTERNAL_STORAGE was granted.");
+                /* Start file chooser */
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("file/*");
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                startActivityForResult(Intent.createChooser(intent, this.getString(R.string
+                        .ikm_select_keystore)), KEYSTORE_INTENT);
+            } else {
+                Log.d(TAG, "Permission READ_EXTERNAL_STORAGE was denied.");
+                sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+            }
+        }
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == KEYSTORE_INTENT && resultCode == Activity.RESULT_OK) {
@@ -170,6 +200,8 @@ public class SelectKeyStoreActivity extends Activity
             param = alias;
             decisionDialog.dismiss();
             hostnameDialog.show();
+        } else {
+            sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
         }
     }
 }
