@@ -106,14 +106,14 @@ public class KeyManagerWrapper extends X509ExtendedKeyManager {
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers) {
         String[] aliases = km.getClientAliases(keyType, issuers);
-        Log.d(TAG, "Client aliases for key type " + keyType + " and issuers " + Arrays.toString(issuers) + ": " + Arrays.toString(aliases));
+        Log.d(TAG, "Client getAliases for key type " + keyType + " and issuers " + Arrays.toString(issuers) + ": " + Arrays.toString(aliases));
         return aliases;
     }
 
     @Override
     public String[] getServerAliases(String keyType, Principal[] issuers) {
         String[] aliases = km.getServerAliases(keyType, issuers);
-        Log.d(TAG, "Client aliases for key type " + keyType + " and issuers " + Arrays.toString(issuers) + ": " + Arrays.toString(aliases));
+        Log.d(TAG, "Client getAliases for key type " + keyType + " and issuers " + Arrays.toString(issuers) + ": " + Arrays.toString(aliases));
         return aliases;
     }
 

@@ -27,101 +27,130 @@ package de.ritscher.ssl;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class SelectKeyStoreActivity extends Activity
-        implements OnClickListener, OnCancelListener, KeyChainAliasCallback, ActivityCompat
-        .OnRequestPermissionsResultCallback  {
+        implements OnClickListener, OnCancelListener, KeyChainAliasCallback, ActivityCompat.OnRequestPermissionsResultCallback  {
 
     private final static String TAG = "SelectKeyStoreActivity";
     private final static int KEYSTORE_INTENT = 1380421;
     private final static int PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER = 1001;
 
-    int decisionId;
+    private int decisionId;
+    private int state = IKMDecision.DECISION_INVALID;
+    private String param = null;
+    private String hostname = null;
+    private Integer port = null;
 
-    int state = IKMDecision.DECISION_INVALID;
-    String param = null;
-
-    AlertDialog decisionDialog, hostnameDialog;
-    EditText hostnameInput;
+    private AlertDialog decisionDialog;
+    private EditText hostnamePortInput;
+    private Handler toastHandler;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        Log.d(TAG, "onCreate");
         super.onCreate(savedInstanceState);
-        hostnameInput = new EditText(this);
-        hostnameInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        // Initialize widgets
+        hostnamePortInput = new EditText(this);
+        hostnamePortInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         decisionDialog = new AlertDialog.Builder(this).setTitle(R.string.ikm_select_cert)
+                .setMessage(getString(R.string.ikm_client_cert))
+                .setView(hostnamePortInput)
                 .setPositiveButton(R.string.ikm_decision_file, this)
                 .setNeutralButton(R.string.ikm_decision_keychain, this)
                 .setNegativeButton(R.string.ikm_decision_abort, this)
                 .setOnCancelListener(this)
                 .create();
-        hostnameDialog = new AlertDialog.Builder(this).setTitle(R.string.ikm_select_host)
-                .setView(hostnameInput)
-                .setPositiveButton(R.string.ikm_decision_host, this)
-                .setNeutralButton(R.string.ikm_decision_all, this)
-                .setNegativeButton(R.string.ikm_decision_abort, this)
-                .setOnCancelListener(this)
-                .create();
+        final Context context = this;
+        toastHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message message) {
+                Toast.makeText(context, (String) message.obj, Toast.LENGTH_SHORT).show();
+            }
+        };
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        // Load data from intent
         Intent i = getIntent();
-        decisionId = i.getIntExtra(InteractiveKeyManager.DECISION_INTENT_ID, IKMDecision
-                .DECISION_INVALID);
-        String cert = i.getStringExtra(InteractiveKeyManager.DECISION_INTENT_CERT);
-        String hostname = i.getStringExtra(InteractiveKeyManager.DECISION_INTENT_HOSTNAME);
-        int port = i.getIntExtra(InteractiveKeyManager.DECISION_INTENT_PORT, 0);
-        Log.d(TAG, "onResume with " + i.getExtras() + " decId=" + decisionId + " data=" + i
-                .getData());
-        decisionDialog.setMessage(cert);
-
-        hostnameInput.setText(hostname + ":" + port);
-        if (state == IKMDecision.DECISION_INVALID) {
-            decisionDialog.show();
-        } else {
-            hostnameDialog.show();
-        }
+        decisionId = i.getIntExtra(InteractiveKeyManager.DECISION_INTENT_ID, IKMDecision.DECISION_INVALID);
+        String hostnamePort = i.getStringExtra(InteractiveKeyManager.DECISION_INTENT_HOSTNAME_PORT);
+        Log.d(TAG, "onResume() with " + i.getExtras() + " decId=" + decisionId + " data=" + i.getData());
+        hostnamePortInput.setText(hostnamePort);
+        decisionDialog.show();
     }
 
     @Override
     protected void onPause() {
-        if (decisionDialog.isShowing()) {
-            decisionDialog.dismiss();
-        }
-        if (hostnameDialog.isShowing()) {
-            hostnameDialog.dismiss();
-        }
+        Intent i = getIntent();
+        i.putExtra(InteractiveKeyManager.DECISION_INTENT_HOSTNAME_PORT, hostnamePortInput.getText().toString());
+        decisionDialog.dismiss();
         super.onPause();
     }
 
+    /**
+     * Stop the user interaction and send result to invoking InteractiveKeyManager.
+     * @param state type of the result as defined in IKMDecision
+     * @param param keychain alias respectively keystore filename
+     * @param hostname hostname of connection
+     * @param port port of connection
+     */
     void sendDecision(int state, String param, String hostname, Integer port) {
         Log.d(TAG, "sendDecision(" + state + ", " + param + ", " + hostname + ", " + port + ")");
         decisionDialog.dismiss();
-        hostnameDialog.dismiss();
         InteractiveKeyManager.interactResult(decisionId, state, param, hostname, port);
         finish();
     }
 
+    @Override
     public void onClick(DialogInterface dialog, int btnId) {
         if (dialog == decisionDialog) {
+            if (btnId == DialogInterface.BUTTON_NEGATIVE) { // Cancel
+                sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+            }
+            // Parse hostname and port
+            hostname = null;
+            port = null;
+            try {
+                String parts[] = hostnamePortInput.getText().toString().split(":");
+                if (parts.length > 2) {
+                    throw new IllegalArgumentException("To many separating colons");
+                }
+                hostname = parts.length > 0 && !TextUtils.isEmpty(parts[0]) ? parts[0] : null;
+                if (parts.length > 1) {
+                    port = Integer.valueOf(parts[1]);
+                }
+            } catch (IllegalArgumentException e) {
+                // hostname:port invalid; show toast and ignore button click
+                Log.e(TAG, "onClick: could not parse hostname " + hostnamePortInput.getText());
+                toastHandler.obtainMessage(0, getString(R.string.ikm_store_aliasMapping)).sendToTarget();
+                return;
+            }
+            // User selected how to provide key
             switch (btnId) {
-                case DialogInterface.BUTTON_POSITIVE:
+                case DialogInterface.BUTTON_POSITIVE: // keystore file
+                    // Check permission to read external storage and request it/simulate successful request
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
                             PackageManager.PERMISSION_GRANTED) {
                         Log.d(TAG, "Requesting permission READ_EXTERNAL_STORAGE");
@@ -131,75 +160,72 @@ public class SelectKeyStoreActivity extends Activity
                     } else {
                         Log.d(TAG, "Verified permission READ_EXTERNAL_STORAGE");
                         /* Permission callback invokes file chooser */
-                        onRequestPermissionsResult (PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER,
+                        onRequestPermissionsResult(PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER,
                                 new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                                 new int[]{PackageManager.PERMISSION_GRANTED});
                     }
                     break;
-                case DialogInterface.BUTTON_NEUTRAL:
+                case DialogInterface.BUTTON_NEUTRAL: // keychain alias
                     KeyChain.choosePrivateKeyAlias(this, this, null, null, null, -1, null);
                     break;
-                default:
-                    sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
-            }
-        } else if (dialog == hostnameDialog) {
-            switch (btnId) {
-                case DialogInterface.BUTTON_POSITIVE:
-                    String hostname[] = hostnameInput.getText().toString().split(":");
-                    Integer port = null;
-                    if (hostname.length >= 2) {
-                        port = Integer.valueOf(hostname[1]);
-                    }
-                    sendDecision(state, param, hostname[0], port);
-                    break;
-                case DialogInterface.BUTTON_NEUTRAL:
-                    sendDecision(state, param, null, null);
-                    break;
-                default:
-                    sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
             }
         }
     }
 
+    @Override
     public void onCancel(DialogInterface dialog) {
         sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
     }
 
-    public void onRequestPermissionsResult (int requestCode, String[] permissions, int[] grantResults) {
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        // Handle result of request for permission to read external storage
         if (requestCode == PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d(TAG, "Permission READ_EXTERNAL_STORAGE was granted.");
-                /* Start file chooser */
-                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-                intent.setType("file/*");
-                intent.addCategory(Intent.CATEGORY_OPENABLE);
-                startActivityForResult(Intent.createChooser(intent, this.getString(R.string
-                        .ikm_select_keystore)), KEYSTORE_INTENT);
+            for (int i = 0; i < permissions.length && i < grantResults.length; i++) {
+                if (Manifest.permission.READ_EXTERNAL_STORAGE.equals(permissions[i]) && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    // Read external storage permission granted
+                    Log.d(TAG, "onRequestPermissionsResult(): Permission READ_EXTERNAL_STORAGE was granted.");
+                    // Start file chooser to select keystore
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.setType("file/*");
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    startActivityForResult(Intent.createChooser(intent, this.getString(R.string.ikm_select_keystore)), KEYSTORE_INTENT);
+                    return;
+                }
+            }
+            // Permission denied
+            Log.w(TAG, "onRequestPermissionsResult(): Permission READ_EXTERNAL_STORAGE was denied.");
+            sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Handle result of keystore file chooser
+        if (requestCode == KEYSTORE_INTENT) {
+            if (resultCode == Activity.RESULT_OK) {
+                if (data.getData() == null) {
+                    Log.w(TAG, "Keystore file chooser returned with OK, but file was null.");
+                    sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+                } else {
+                    state = IKMDecision.DECISION_FILE;
+                    param = data.getData().getPath();
+                    sendDecision(state, param, hostname, port);
+                }
             } else {
-                Log.d(TAG, "Permission READ_EXTERNAL_STORAGE was denied.");
                 sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
             }
         }
     }
 
     @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == KEYSTORE_INTENT && resultCode == Activity.RESULT_OK) {
-            state = IKMDecision.DECISION_FILE;
-            param = data.getData().getPath();
-            decisionDialog.dismiss();
-            hostnameDialog.show();
-        }
-    }
-
-    @Override
     public void alias(final String alias) {
+        // Handle result of keychain alias chooser
         Log.d(TAG, "alias(" + alias + ")");
         if (alias != null) {
             state = IKMDecision.DECISION_KEYCHAIN;
             param = alias;
-            decisionDialog.dismiss();
-            hostnameDialog.show();
+            sendDecision(state, param, hostname, port);
         } else {
             sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
         }
