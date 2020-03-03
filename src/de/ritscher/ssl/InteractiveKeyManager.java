@@ -19,14 +19,13 @@ import android.security.KeyChainException;
 import android.util.Log;
 import android.util.SparseArray;
 import android.webkit.ClientCertRequest;
-import android.widget.TabHost;
 import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.Charset;
 import java.security.KeyStoreException;
 import java.security.Principal;
 import java.security.PrivateKey;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.X509KeyManager;
 
 import androidx.annotation.NonNull;
@@ -550,9 +548,9 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         int len = is.available();
         byte[] buffer = new byte[len];
         is.mark(len + 1);
-        is.read(buffer, 0, len);
+        len = is.read(buffer, 0, len);
         is.reset();
-        Log.e(TAG, "handshakeFailde: " + buffer);
+        Log.e(TAG, "handshakeFailed: " + new String(buffer, 0, len, Charset.defaultCharset()));
     }
 
     /**
