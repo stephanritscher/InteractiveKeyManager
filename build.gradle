@@ -1,7 +1,10 @@
 buildscript {
     repositories {
-        mavenCentral()
-	    maven { url 'file:/opt/android-studio/gradle/m2repository' }
+	jcenter()
+	google()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:3.6.1'
     }
 }
 
