@@ -241,6 +241,21 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     }
 
     /**
+     * Remove KeyChain aliases from KEYCHAIN_ALIASES based on filter and depending on causing
+     * exception
+     * @param filter IKMAlias object used as filter
+     * @param e exception on retrieving certificate/key
+     */
+    private void removeKeyChain(IKMAlias filter, KeyChainException e) throws IllegalArgumentException {
+        if (e.getMessage().contains("keystore is LOCKED")) {
+            /* This exception occurs after the start before the password is entered on an
+            encrypted device. Don't remove alias in this case. */
+            return;
+        }
+        removeKeyChain(filter);
+    }
+
+    /**
      * Remove KeyChain aliases from KEYCHAIN_ALIASES based on filter
      * @param filter IKMAlias object used as filter
      */
@@ -469,7 +484,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                 return certificateChain;
             } catch (KeyChainException e) {
                 Log.e(TAG, "getCertificateChain(alias=" + alias + ") - keychain alias=" + ikmAlias.getAlias(), e);
-                removeKeyChain(ikmAlias);
+                removeKeyChain(ikmAlias, e);
                 toastHandler.obtainMessage(0, context.getString(R.string.ikm_keychain) + " " +
                         ikmAlias.getAlias()).sendToTarget();
                 return null;
@@ -504,7 +519,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                 return key;
             } catch (KeyChainException e) {
                 Log.e(TAG, "getPrivateKey(alias=" + alias + ")", e);
-                removeKeyChain(ikmAlias);
+                removeKeyChain(ikmAlias, e);
                 toastHandler.obtainMessage(0, context.getString(R.string.ikm_keychain) + " " +
                         ikmAlias.getAlias()).sendToTarget();
                 return null;
