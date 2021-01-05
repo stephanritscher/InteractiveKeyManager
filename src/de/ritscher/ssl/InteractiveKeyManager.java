@@ -193,7 +193,8 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      * @param port port for which the alias shall be used (only if hostname is not null); null for any
      * @return alias to be used in KEYCHAIN_ALIASES
      */
-    private @NonNull String addKeyChain(@NonNull String keyChainAlias, String hostname, Integer port) {
+    public @NonNull String addKeyChain(@NonNull String keyChainAlias, String hostname,
+                                      Integer port) {
         String alias = new IKMAlias(KEYCHAIN, keyChainAlias, hostname, port).toString();
         Set<String> aliases = new HashSet<>(sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<String>()));
         aliases.add(alias);
@@ -461,7 +462,11 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         IKMAlias ikmAlias = new IKMAlias(alias);
         if (ikmAlias.getType() == KEYCHAIN) {
             try {
-                return KeyChain.getCertificateChain(context, ikmAlias.getAlias());
+                X509Certificate[] certificateChain = KeyChain.getCertificateChain(context, ikmAlias.getAlias());
+                if (certificateChain == null) {
+                    throw new KeyChainException("could not retrieve certificate chain for alias " + ikmAlias.getAlias());
+                }
+                return certificateChain;
             } catch (KeyChainException e) {
                 Log.e(TAG, "getCertificateChain(alias=" + alias + ") - keychain alias=" + ikmAlias.getAlias(), e);
                 removeKeyChain(ikmAlias);
@@ -469,7 +474,8 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                         ikmAlias.getAlias()).sendToTarget();
                 return null;
             } catch (InterruptedException e) {
-                Log.e(TAG, "getCertificateChain(alias=" + alias + ")", e);
+                Log.d(TAG, "getCertificateChain(alias=" + alias + ")", e);
+                Thread.currentThread().interrupt();
                 return null;
             }
         } else if (ikmAlias.getType() == KEYSTORE) {
@@ -493,7 +499,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
             try {
                 PrivateKey key = KeyChain.getPrivateKey(context, ikmAlias.getAlias());
                 if (key == null) {
-                    throw new KeyChainException("private key is null");
+                    throw new KeyChainException("could not retrieve private key for alias " + ikmAlias.getAlias());
                 }
                 return key;
             } catch (KeyChainException e) {
@@ -503,7 +509,8 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                         ikmAlias.getAlias()).sendToTarget();
                 return null;
             } catch (InterruptedException e) {
-                Log.e(TAG, "getPrivateKey(alias=" + alias + ")", e);
+                Log.d(TAG, "getPrivateKey(alias=" + alias + ")", e);
+                Thread.currentThread().interrupt();
                 return null;
             }
         } else if (ikmAlias.getType() == KEYSTORE) {
@@ -662,6 +669,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
             }
         } catch (InterruptedException e) {
             Log.d(TAG, "interactClientCert: InterruptedException", e);
+            Thread.currentThread().interrupt();
         }
         Log.d(TAG, "interactClientCert: finished wait on " + id + ": state=" + decision.state +
                 ", param=" + decision.state);
