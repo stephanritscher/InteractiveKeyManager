@@ -45,12 +45,10 @@ import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
+import lombok.NonNull;
 
 public class SelectKeyStoreActivity extends Activity
-        implements OnClickListener, OnCancelListener, KeyChainAliasCallback, ActivityCompat.OnRequestPermissionsResultCallback  {
+        implements OnClickListener, OnCancelListener, KeyChainAliasCallback {
 
     private final static String TAG = "SelectKeyStoreActivity";
     private final static int KEYSTORE_INTENT = 1380421;
@@ -151,11 +149,10 @@ public class SelectKeyStoreActivity extends Activity
             switch (btnId) {
                 case DialogInterface.BUTTON_POSITIVE: // keystore file
                     // Check permission to read external storage and request it/simulate successful request
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) !=
+                    if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
                             PackageManager.PERMISSION_GRANTED) {
                         Log.d(TAG, "Requesting permission READ_EXTERNAL_STORAGE");
-                        ActivityCompat.requestPermissions(this,
-                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                                 PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER);
                     } else {
                         Log.d(TAG, "Verified permission READ_EXTERNAL_STORAGE");

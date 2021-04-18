@@ -17,6 +17,7 @@ import android.os.Message;
 import android.security.KeyChain;
 import android.security.KeyChainException;
 import android.util.Log;
+import android.util.Pair;
 import android.util.SparseArray;
 import android.webkit.ClientCertRequest;
 import android.widget.Toast;
@@ -42,8 +43,7 @@ import java.util.Set;
 
 import javax.net.ssl.X509KeyManager;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.Pair;
+import lombok.NonNull;
 
 import static de.ritscher.ssl.IKMAlias.Type.KEYCHAIN;
 import static de.ritscher.ssl.IKMAlias.Type.KEYSTORE;

@@ -5,7 +5,7 @@ import android.util.Log;
 import java.net.InetAddress;
 import java.util.Objects;
 
-import androidx.annotation.NonNull;
+import lombok.NonNull;
 
 public class IKMAlias {
     private final static String TAG = "IKMAlias";
