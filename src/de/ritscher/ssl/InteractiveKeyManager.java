@@ -3,6 +3,7 @@ package de.ritscher.ssl;
 import android.app.Activity;
 import android.app.Application;
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -10,6 +11,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -590,57 +592,30 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         return id;
     }
 
-//    /**
-//     * Reflectively call
-//     * <code>Notification.setLatestEventInfo(Context, CharSequence, CharSequence, PendingIntent)</code>
-//     * since it was remove in Android API level 23.
-//     *
-//     * @param notification
-//     * @param context
-//     * @param mtmNotification
-//     * @param certName
-//     * @param call
-//     */
-//    private static void setLatestEventInfoReflective(Notification notification,
-//                                                     Context context, CharSequence mtmNotification,
-//                                                     CharSequence certName, PendingIntent call) {
-//        try {
-//            Method setLatestEventInfo = notification.getClass().getMethod(
-//                    "setLatestEventInfo", Context.class, CharSequence.class,
-//                    CharSequence.class, PendingIntent.class);
-//            setLatestEventInfo.invoke(notification, context, mtmNotification, certName, call);
-//        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException e) {
-//            throw new IllegalStateException(e);
-//        }
-//    }
+    @SuppressWarnings("deprecation")
+    private Notification.Builder getDeprecatedNotificationBuilder(Context ctx) {
+        return new Notification.Builder(ctx);
+    }
+
+    private Notification.Builder getNotificationBuilder(Context ctx) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return getDeprecatedNotificationBuilder(ctx);
+        } else {
+            return new Notification.Builder(ctx, NotificationChannel.DEFAULT_CHANNEL_ID);
+        }
+    }
 
     private void startActivityNotification(@NonNull Intent intent, int decisionId, @NonNull String message) {
-        Notification notification;
         final PendingIntent call = PendingIntent.getActivity(context, 0, intent, 0);
-        final String notificationTitle = context.getString(R.string.ikm_notification);
-        final long currentMillis = System.currentTimeMillis();
-        final Context ctx = context.getApplicationContext();
-
-//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-//            @SuppressWarnings("deprecation")
-//            // Use an extra identifier for the legacy build notification, so that we suppress
-//            // the deprecation warning. We will latter assign this to the correct identifier.
-//            Notification n = new Notification(android.R.drawable.ic_lock_lock,
-//            notificationTitle, currentMillis);
-//            setLatestEventInfoReflective(n, ctx, notificationTitle, message, call);
-//            n.flags |= Notification.FLAG_AUTO_CANCEL;
-//            notification = n;
-//        } else {
-            notification = new Notification.Builder(ctx)
-                    .setContentTitle(notificationTitle)
-                    .setContentText(message)
-                    .setTicker(message)
-                    .setSmallIcon(android.R.drawable.ic_lock_lock)
-                    .setWhen(currentMillis)
-                    .setContentIntent(call)
-                    .setAutoCancel(true)
-                    .build();
- //       }
+        final Notification notification = getNotificationBuilder(context.getApplicationContext())
+                .setContentTitle(context.getString(R.string.ikm_notification))
+                .setContentText(message)
+                .setTicker(message)
+                .setSmallIcon(android.R.drawable.ic_lock_lock)
+                .setWhen(System.currentTimeMillis())
+                .setContentIntent(call)
+                .setAutoCancel(true)
+                .build();
 
         notificationManager.notify(NOTIFICATION_ID + decisionId, notification);
     }
