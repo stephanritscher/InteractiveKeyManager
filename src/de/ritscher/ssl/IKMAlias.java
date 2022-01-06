@@ -3,6 +3,7 @@ package de.ritscher.ssl;
 import android.util.Log;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Objects;
 
 import lombok.NonNull;
@@ -14,7 +15,7 @@ public class IKMAlias {
         KEYCHAIN("KC_"),
         KEYSTORE("KS_");
 
-        private String prefix;
+        private final String prefix;
 
         Type(String prefix) {
             this.prefix = prefix;
@@ -34,10 +35,10 @@ public class IKMAlias {
         }
     }
 
-    private Type type;
-    private String alias;
-    private String hostname;
-    private Integer port;
+    private final Type type;
+    private final String alias;
+    private final String hostname;
+    private final Integer port;
 
     /**
      * Constructor of IKMAlias
@@ -130,7 +131,7 @@ public class IKMAlias {
         if (hostname != null && filter.hostname != null && !filter.hostname.equals(hostname)) {
             // Resolve hostname fields to ip addresses
             InetAddress address = null, filterAddress = null;
-            /*try {
+            try {
                 address = InetAddress.getByName(hostname);
             } catch (UnknownHostException e) {
                 Log.w(TAG, "matches: error resolving " + hostname);
@@ -139,7 +140,7 @@ public class IKMAlias {
                 filterAddress = InetAddress.getByName(filter.hostname);
             } catch (UnknownHostException e) {
                 Log.w(TAG, "matches: error resolving " + filter.hostname);
-            }*/
+            }
             // If resolution succeeded, compare addresses, otherwise host names
             if ((address == null || !address.equals(filterAddress))) {
                 Log.d(TAG, "matches: alias " + toString() + " (address=" + address + ") does not match hostname " +

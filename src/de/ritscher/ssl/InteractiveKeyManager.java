@@ -36,11 +36,10 @@ import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.net.ssl.X509KeyManager;
@@ -69,14 +68,6 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     private Handler toastHandler;
     private Activity foregroundAct;
     private NotificationManager notificationManager;
-
-    class HandshakeState {
-        long lastUpdate;
-    }
-
-    private Map<Socket, HandshakeState> handshakeStates = new HashMap<>();
-
-    //private static InteractiveKeyManager instance = null;
 
     private static int decisionId = 0;
     final private static SparseArray<IKMDecision> openDecisions = new SparseArray<>();
@@ -119,7 +110,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         sharedPreferences = context.getSharedPreferences(context.getPackageName() + "." + "InteractiveKeyManager",
                                                          Context.MODE_PRIVATE);
         Log.d(TAG, "init(): keychain aliases = " + Arrays.toString(
-                sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<String>()).toArray()));
+                sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<>()).toArray()));
 
         File dir = app.getDir("InteractiveKeyManager", Context.MODE_PRIVATE);
         appKeyStore = new X509KeyStoreFile(new File(dir + File.separator + "appKeyStore.bks"),
@@ -198,7 +189,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     public @NonNull String addKeyChain(@NonNull String keyChainAlias, String hostname,
                                       Integer port) {
         String alias = new IKMAlias(KEYCHAIN, keyChainAlias, hostname, port).toString();
-        Set<String> aliases = new HashSet<>(sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<String>()));
+        Set<String> aliases = new HashSet<>(sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<>()));
         aliases.add(alias);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putStringSet(KEYCHAIN_ALIASES, aliases);
@@ -249,7 +240,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      * @param e exception on retrieving certificate/key
      */
     private void removeKeyChain(IKMAlias filter, KeyChainException e) throws IllegalArgumentException {
-        if (e.getMessage().contains("keystore is LOCKED")) {
+        if (Objects.requireNonNull(e.getMessage()).contains("keystore is LOCKED")) {
             /* This exception occurs after the start before the password is entered on an
             encrypted device. Don't remove alias in this case. */
             return;
@@ -263,7 +254,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      */
     private void removeKeyChain(IKMAlias filter) throws IllegalArgumentException {
         Set<String> aliases = new HashSet<>();
-        for (String alias : sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<String>())) {
+        for (String alias : sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<>())) {
             IKMAlias ikmAlias = new IKMAlias(alias);
             if (!ikmAlias.matches(filter)) {
                 aliases.add(alias);
@@ -348,16 +339,22 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                 validAliases.add(alias);
             }
         } catch (KeyStoreException | IOException e) {
-            Log.e(TAG, "getAliases(keyTypes=" + Arrays.toString(keyTypes.toArray()) + ", issuers=" + Arrays.toString
-                    (issuers) + ", hostname=" + hostname + ", port=" + port + ")", e);
+            Log.e(TAG, "getAliases(keyTypes=" + (keyTypes != null ?Arrays.toString(keyTypes.toArray()) : null)
+                    + ", issuers=" + Arrays.toString(issuers)
+                    + ", hostname=" + hostname
+                    + ", port=" + port
+                    + ")", e);
             toastHandler.obtainMessage(0, context.getString(R.string.ikm_load_app_keystore)).sendToTarget();
         }
         // Check keychain aliases
         IKMAlias filter = new IKMAlias(IKMAlias.Type.KEYCHAIN, null, hostname, port);
-        validAliases.addAll(filterAliases(sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<String>()), filter));
+        validAliases.addAll(filterAliases(sharedPreferences.getStringSet(KEYCHAIN_ALIASES, new HashSet<>()), filter));
 
-        Log.d(TAG, "getAliases(keyTypes=" + Arrays.toString(keyTypes.toArray()) + ", issuers=" + Arrays.toString(issuers) +
-                ", hostname=" + hostname + ", port=" + port + ") = " + Arrays.toString(validAliases.toArray()));
+        Log.d(TAG, "getAliases(keyTypes=" + (keyTypes != null ? Arrays.toString(keyTypes.toArray()) : null)
+                + ", issuers=" + Arrays.toString(issuers)
+                + ", hostname=" + hostname
+                + ", port=" + port
+                + ") = " + Arrays.toString(validAliases.toArray()));
         return validAliases.toArray(new String[0]);
     }
 
@@ -606,7 +603,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     }
 
     private void startActivityNotification(@NonNull Intent intent, int decisionId, @NonNull String message) {
-        final PendingIntent call = PendingIntent.getActivity(context, 0, intent, 0);
+        final PendingIntent call = PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         final Notification notification = getNotificationBuilder(context.getApplicationContext())
                 .setContentTitle(context.getString(R.string.ikm_notification))
                 .setContentText(message)
@@ -633,22 +630,20 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         IKMDecision decision = new IKMDecision();
         final int id = createDecisionId(decision);
 
-        masterHandler.post(new Runnable() {
-            public void run() {
-                Intent ni = new Intent(context, SelectKeyStoreActivity.class);
-                ni.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                ni.setData(Uri.parse(SelectKeyStoreActivity.class.getName() + "/" + id));
-                ni.putExtra(DECISION_INTENT_ID, id);
-                ni.putExtra(DECISION_INTENT_HOSTNAME_PORT, hostname + ":" + port);
+        masterHandler.post(() -> {
+            Intent ni = new Intent(context, SelectKeyStoreActivity.class);
+            ni.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ni.setData(Uri.parse(SelectKeyStoreActivity.class.getName() + "/" + id));
+            ni.putExtra(DECISION_INTENT_ID, id);
+            ni.putExtra(DECISION_INTENT_HOSTNAME_PORT, hostname + ":" + port);
 
-                // we try to directly start the activity and fall back to making a notification
-                try {
-                    getUI().startActivity(ni);
-                } catch (Exception e) {
-                    Log.d(TAG, "interactClientCert: startActivity(SelectKeyStoreActivity)", e);
-                    startActivityNotification(ni, id, context.getString(R.string.ikm_client_cert_notification) +
-                                                                                " " + hostname + ":" + port);
-                }
+            // we try to directly start the activity and fall back to making a notification
+            try {
+                getUI().startActivity(ni);
+            } catch (Exception e) {
+                Log.d(TAG, "interactClientCert: startActivity(SelectKeyStoreActivity)", e);
+                startActivityNotification(ni, id, context.getString(R.string.ikm_client_cert_notification) +
+                                                                            " " + hostname + ":" + port);
             }
         });
 

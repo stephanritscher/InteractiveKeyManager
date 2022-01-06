@@ -16,7 +16,7 @@ import javax.net.ssl.X509KeyManager;
 
 public class KeyManagerWrapper extends X509ExtendedKeyManager {
     private final static String TAG = "KeyManagerWrapper";
-    private X509KeyManager km;
+    private final X509KeyManager km;
 
     public KeyManagerWrapper(X509KeyManager km) {
         this.km = km;
@@ -70,7 +70,7 @@ public class KeyManagerWrapper extends X509ExtendedKeyManager {
             return alias;
         }
         for (String kt : keyType) {
-            String aliases[] = getClientAliases(kt, issuers);
+            String[] aliases = getClientAliases(kt, issuers);
             if (aliases != null && aliases.length > 0) {
                 Log.d(TAG, "Choose client alias " + aliases[0] + " for key type " + kt + " and issuers " + Arrays.toString(issuers));
                 return aliases[0];
@@ -87,7 +87,7 @@ public class KeyManagerWrapper extends X509ExtendedKeyManager {
             Log.d(TAG, "Choose default server alias " + alias + " for key type " + keyType + " and issuers " + Arrays.toString(issuers));
             return alias;
         }
-        String aliases[] = getServerAliases(keyType, issuers);
+        String[] aliases = getServerAliases(keyType, issuers);
         if (aliases != null && aliases.length > 0) {
             Log.d(TAG, "Choose server alias " + aliases[0] + " for key type " + keyType + " and issuers " + Arrays.toString(issuers));
             return aliases[0];

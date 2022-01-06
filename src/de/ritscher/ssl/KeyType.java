@@ -8,7 +8,7 @@ public enum KeyType {
     RSA("RSA"),
     EC("EC", "ECDSA");
 
-    private Set<String> names;
+    private final Set<String> names;
 
     KeyType(String... names) {
         this.names = new HashSet<>(Arrays.asList(names));

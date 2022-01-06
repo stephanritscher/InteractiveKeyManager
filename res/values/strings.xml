@@ -3,15 +3,10 @@
     <string name="ikm_select_cert">Select Client Certificate</string>
     <string name="ikm_client_cert">Server requested a client certificate. Please select which certificate you want to use.</string>
     <string name="ikm_client_cert_notification">Select client certificate for</string>
-    <string name="ikm_cert_details">Server Certificate details:</string>
-    <string name="ikm_select_host">Select Hostname for Certificate</string>
-    <string name="ikm_invalid_host">Invalid hostname</string>
 
     <string name="ikm_decision_file">From File</string>
     <string name="ikm_decision_keychain">From Device Key Manager</string>
     <string name="ikm_decision_abort">Abort</string>
-    <string name="ikm_decision_all">Allow all Hosts</string>
-    <string name="ikm_decision_host">Allow this Host</string>
 
     <string name="ikm_notification">Select Client Certificate</string>
 

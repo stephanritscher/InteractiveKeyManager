@@ -27,11 +27,11 @@ public class X509KeyStoreFile {
 
     private final static String KEYSTORE_VERSION = "KeyStoreVersion";
 
-    private File file;
-    private String password;
+    private final File file;
+    private final String password;
     private KeyStore keyStore;
     private long loadedVersion;
-    private SharedPreferences sharedPreferences;
+    private final SharedPreferences sharedPreferences;
 
     /**
      * Constructor

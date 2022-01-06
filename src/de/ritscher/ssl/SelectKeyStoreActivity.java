@@ -131,7 +131,7 @@ public class SelectKeyStoreActivity extends Activity
             hostname = null;
             port = null;
             try {
-                String parts[] = hostnamePortInput.getText().toString().split(":");
+                String[] parts = hostnamePortInput.getText().toString().split(":");
                 if (parts.length > 2) {
                     throw new IllegalArgumentException("To many separating colons");
                 }
