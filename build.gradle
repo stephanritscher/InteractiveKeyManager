@@ -4,7 +4,7 @@ android {
     namespace "de.ritscher.ssl"
     compileSdkVersion 33
     defaultConfig {
-        minSdkVersion 23
+        minSdkVersion 21
         targetSdkVersion 33
     }
 

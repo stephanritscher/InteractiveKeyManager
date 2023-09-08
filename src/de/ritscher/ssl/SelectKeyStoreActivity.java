@@ -33,6 +33,7 @@ import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -149,17 +150,19 @@ public class SelectKeyStoreActivity extends Activity
             switch (btnId) {
                 case DialogInterface.BUTTON_POSITIVE: // keystore file
                     // Check permission to read external storage and request it/simulate successful request
-                    if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
-                            PackageManager.PERMISSION_GRANTED) {
-                        Log.d(TAG, "Requesting permission READ_EXTERNAL_STORAGE");
-                        requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                                PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER);
-                    } else {
-                        Log.d(TAG, "Verified permission READ_EXTERNAL_STORAGE");
-                        /* Permission callback invokes file chooser */
-                        onRequestPermissionsResult(PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER,
-                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                                new int[]{PackageManager.PERMISSION_GRANTED});
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) !=
+                                PackageManager.PERMISSION_GRANTED) {
+                            Log.d(TAG, "Requesting permission READ_EXTERNAL_STORAGE");
+                            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                    PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER);
+                        } else {
+                            Log.d(TAG, "Verified permission READ_EXTERNAL_STORAGE");
+                            /* Permission callback invokes file chooser */
+                            onRequestPermissionsResult(PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER,
+                                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                    new int[]{PackageManager.PERMISSION_GRANTED});
+                        }
                     }
                     break;
                 case DialogInterface.BUTTON_NEUTRAL: // keychain alias
