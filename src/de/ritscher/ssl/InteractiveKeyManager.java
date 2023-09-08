@@ -44,7 +44,7 @@ import java.util.Set;
 
 import javax.net.ssl.X509KeyManager;
 
-import lombok.NonNull;
+import androidx.annotation.NonNull;
 
 import static de.ritscher.ssl.IKMAlias.Type.KEYCHAIN;
 import static de.ritscher.ssl.IKMAlias.Type.KEYSTORE;

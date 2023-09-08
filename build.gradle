@@ -2,10 +2,10 @@ apply plugin: 'com.android.library'
 
 android {
     namespace "de.ritscher.ssl"
-    compileSdkVersion 33
+    compileSdkVersion 34
     defaultConfig {
         minSdkVersion 21
-        targetSdkVersion 33
+        targetSdkVersion 34
     }
 
     sourceSets {
@@ -22,6 +22,5 @@ android {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.22'
-    annotationProcessor 'org.projectlombok:lombok:1.18.22'
+    implementation 'androidx.annotation:annotation:1.7.0'
 }

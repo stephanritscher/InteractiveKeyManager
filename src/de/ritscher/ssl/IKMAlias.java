@@ -6,7 +6,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
-import lombok.NonNull;
+import androidx.annotation.NonNull;
 
 public class IKMAlias {
     private final static String TAG = "IKMAlias";
