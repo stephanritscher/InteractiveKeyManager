@@ -1,26 +1,9 @@
-apply plugin: 'com.android.library'
-
-android {
-    namespace "de.ritscher.ssl"
-    compileSdkVersion 34
-    defaultConfig {
-        minSdkVersion 21
-        targetSdkVersion 34
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
     }
-
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = ['src']
-            resources.srcDirs = ['src']
-            aidl.srcDirs = ['src']
-            renderscript.srcDirs = ['src']
-            res.srcDirs = ['res']
-            assets.srcDirs = ['assets']
-        }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.6.0'
     }
-}
-
-dependencies {
-    implementation 'androidx.annotation:annotation:1.7.0'
 }

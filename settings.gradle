@@ -10,3 +10,4 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+include ':lib'
