@@ -46,7 +46,7 @@ import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 public class SelectKeyStoreActivity extends Activity
         implements OnClickListener, OnCancelListener, KeyChainAliasCallback {

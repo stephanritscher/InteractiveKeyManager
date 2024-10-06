@@ -2,11 +2,11 @@ package de.ritscher.ssl;
 
 import android.util.Log;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
-
-import androidx.annotation.NonNull;
 
 public class IKMAlias {
     private final static String TAG = "IKMAlias";

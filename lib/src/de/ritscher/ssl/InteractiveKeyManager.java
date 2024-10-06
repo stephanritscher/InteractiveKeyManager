@@ -24,6 +24,8 @@ import android.util.SparseArray;
 import android.webkit.ClientCertRequest;
 import android.widget.Toast;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,10 +43,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
 import javax.net.ssl.X509KeyManager;
-
-import androidx.annotation.NonNull;
 
 import static de.ritscher.ssl.IKMAlias.Type.KEYCHAIN;
 import static de.ritscher.ssl.IKMAlias.Type.KEYSTORE;

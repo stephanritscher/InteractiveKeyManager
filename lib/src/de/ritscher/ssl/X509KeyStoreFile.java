@@ -3,6 +3,8 @@ package de.ritscher.ssl;
 import android.content.SharedPreferences;
 import android.util.Log;
 
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -19,8 +21,6 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
-
-import androidx.annotation.NonNull;
 
 public class X509KeyStoreFile {
     private final static String TAG = "X509KeyStoreFile";
