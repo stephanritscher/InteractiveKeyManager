@@ -14,7 +14,7 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509KeyManager;
 
 
-public class KeyManagerWrapper extends X509ExtendedKeyManager {
+public class KeyManagerWrapper extends X509ExtendedKeyManager { // TODO: Currently unused; optionally wrap key manager for debugging
     private final static String TAG = "KeyManagerWrapper";
     private final X509KeyManager km;
 

@@ -4,7 +4,7 @@ apply plugin: 'maven-publish'
 android {
     namespace "de.ritscher.ssl"
     defaultConfig {
-        minSdkVersion 21
+        minSdkVersion 21 // TODO: Verify if it is reasonable to support older Android versions
         compileSdk 34
         targetSdkVersion 34
     }

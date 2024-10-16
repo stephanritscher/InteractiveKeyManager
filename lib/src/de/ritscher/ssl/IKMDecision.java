@@ -24,13 +24,14 @@
 package de.ritscher.ssl;
 
 class IKMDecision {
-    public final static int DECISION_INVALID = 0;
+    public final static int DECISION_INVALID = 0; // TODO: Check if it can be eliminated
     public final static int DECISION_ABORT = 1;
     public final static int DECISION_KEYCHAIN = 2;
     public final static int DECISION_FILE = 3;
 
-    public int state = DECISION_INVALID;
-    public String param;
+    public int state = DECISION_INVALID; // TODO: Check if subclassing per state is reasonable
+    public String param; // TODO: Avoid duplicate usage / split into separate parameters
     public String hostname;
     public Integer port;
+    // TODO: Add keystore file (and possibly key) password
 }

@@ -56,8 +56,8 @@ public class SelectKeyStoreActivity extends Activity
     private final static int PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER = 1001;
 
     private int decisionId;
-    private int state = IKMDecision.DECISION_INVALID;
-    private String param = null;
+    private int state = IKMDecision.DECISION_INVALID; // TODO: Convert to local parameter
+    private String param = null; // TODO: Convert to local parameter
     private String hostname = null;
     private Integer port = null;
 
@@ -71,6 +71,8 @@ public class SelectKeyStoreActivity extends Activity
         // Initialize widgets
         hostnamePortInput = new EditText(this);
         hostnamePortInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        // TODO: Better create a custom dialog allowing to switch between KeyChain and keystore file alternatives and also add keystore (and possible key) password as parameter for keystore files
+        // TODO: Consider simplifying by removing keystore file alternative
         decisionDialog = new AlertDialog.Builder(this).setTitle(R.string.ikm_select_cert)
                 .setMessage(getString(R.string.ikm_client_cert))
                 .setView(hostnamePortInput)
@@ -93,7 +95,7 @@ public class SelectKeyStoreActivity extends Activity
         super.onResume();
         // Load data from intent
         Intent i = getIntent();
-        decisionId = i.getIntExtra(InteractiveKeyManager.DECISION_INTENT_ID, IKMDecision.DECISION_INVALID);
+        decisionId = i.getIntExtra(InteractiveKeyManager.DECISION_INTENT_ID, IKMDecision.DECISION_INVALID); // TODO: Fix mix-up of decision ID and decision state
         String hostnamePort = i.getStringExtra(InteractiveKeyManager.DECISION_INTENT_HOSTNAME_PORT);
         Log.d(TAG, "onResume() with " + i.getExtras() + " decId=" + decisionId + " data=" + i.getData());
         hostnamePortInput.setText(hostnamePort);
@@ -115,7 +117,7 @@ public class SelectKeyStoreActivity extends Activity
      * @param hostname hostname of connection
      * @param port port of connection
      */
-    void sendDecision(int state, String param, String hostname, Integer port) {
+    void sendDecision(int state, String param, String hostname, Integer port) { // TODO: Split function by state to avoid specifying unneeded parameters
         Log.d(TAG, "sendDecision(" + state + ", " + param + ", " + hostname + ", " + port + ")");
         decisionDialog.dismiss();
         InteractiveKeyManager.interactResult(decisionId, state, param, hostname, port);

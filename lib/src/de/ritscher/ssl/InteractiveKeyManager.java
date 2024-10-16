@@ -57,7 +57,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     private final static int NOTIFICATION_ID = 101319;
 
     private final static String KEYCHAIN_ALIASES = "KeyChainAliases";
-    private final static String KEYSTORE_PASSWORD = "l^=alsk22:,.-32ß091HJK";
+    private final static String KEYSTORE_PASSWORD = "l^=alsk22:,.-32ß091HJK"; // TODO: Use device dependent password to reduce risk of secret extraction
 
     private SharedPreferences sharedPreferences;
     private X509KeyStoreFile appKeyStore;
@@ -87,6 +87,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         // Define handlers for async i/o
         masterHandler = new Handler(context.getMainLooper());
         notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        // TODO: Nice to have: Make error messages (toasts) inspectable in retrospecticve
         toastHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message message) {
@@ -196,6 +197,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
             Log.d(TAG, "addKeyChain(keyChainAlias=" + keyChainAlias + ", hostname=" + hostname + ", port=" +
                     port + "): keychain aliases = " + Arrays.toString(aliases.toArray()));
         } else {
+            // TODO: Check: Display error as toast
             Log.e(TAG, "addKeyChain(keyChainAlias=" + keyChainAlias + ", hostname=" + hostname + ", port=" +
                     port + "): Could not save preferences");
         }
@@ -205,7 +207,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     /**
      * Remove all KeyChain and keystore aliases
      */
-    public void removeAllKeys() {
+    public void removeAllKeys() { // TODO: Add this as option to application GUI
         try {
             removeKeyChain(new IKMAlias(KEYCHAIN, null, null, null));
             removeKeyStore(new IKMAlias(KEYSTORE, null, null, null));
@@ -221,7 +223,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      * @param hostname hostname for which the alias shall be used; null for any
      * @param port port for which the alias shall be used (only if hostname is not null); null for any
      */
-    public void removeKeys(String hostname, Integer port) {
+    public void removeKeys(String hostname, Integer port) { // TODO: Verify if a wrong key setup can be reliably detected or add this or removeAllKeys as option to application GUI
         try {
             removeKeyChain(new IKMAlias(KEYCHAIN, null, hostname, port));
             removeKeyStore(new IKMAlias(KEYSTORE, null, hostname, port));
@@ -265,6 +267,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
             Log.d(TAG, "removeKeyChain(filter=" + filter + "): keychain aliases = " +
                     Arrays.toString(aliases.toArray()));
         } else {
+            // TODO: Check: Display error as toast
             Log.e(TAG, "removeKeyChain(filter=" + filter + "): Could not save preferences");
         }
     }
@@ -382,7 +385,8 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     private String chooseAlias(String[] keyTypes, Principal[] issuers, @NonNull String hostname, int port) {
         // Select certificate for one connection at a time. This is important if multiple connections to the same host
         // are started in a short time and avoids prompting the user with multiple dialogs for the same host.
-        synchronized (InteractiveKeyManager.class) {
+        synchronized (InteractiveKeyManager.class) { // TODO: Synchronize more individually (e.g. per hostname/port)
+                // TODO: This might require queuing display of certificate requests. Also reconsider integrating the certificate selection into the connection setup of the individual projects.
             // Get stored aliases for connection
             String[] validAliases = getAliases(KeyType.parse(Arrays.asList(keyTypes)), issuers, hostname, port);
             if (validAliases.length > 0) {
@@ -446,6 +450,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         try {
             return chooseAlias(keyTypes, issuers, socket);
         } catch (Throwable t) {
+            // TODO: Check: Display error as toast
             Log.e(TAG, "chooseClientAlias", t);
             return null;
         }
@@ -570,6 +575,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         is.mark(len + 1);
         len = is.read(buffer, 0, len);
         is.reset();
+        // TODO: Check: Display error as toast
         Log.e(TAG, "handshakeFailed: " + new String(buffer, 0, len, Charset.defaultCharset()));
     }
 
@@ -668,7 +674,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      * @param hostname hostname of connection
      * @param port port of connection
      */
-    static void interactResult(int decisionId, int state, String param, String hostname, Integer port) {
+    static void interactResult(int decisionId, int state, String param, String hostname, Integer port) { // TODO: Split function by state to avoid specifying unneeded parameters
         IKMDecision decision;
         Log.d(TAG, "interactResult(decisionId=" + decisionId + ", state=" + state + ", param=" + param +
                 ", hostname=" + hostname + ", port=" + port);

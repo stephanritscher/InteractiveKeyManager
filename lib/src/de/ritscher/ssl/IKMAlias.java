@@ -8,7 +8,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
 
-public class IKMAlias {
+public class IKMAlias { // TODO: Convert to immutable
     private final static String TAG = "IKMAlias";
 
     enum Type {
