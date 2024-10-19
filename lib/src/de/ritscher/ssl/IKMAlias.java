@@ -11,7 +11,7 @@ import java.util.Objects;
 public class IKMAlias {
     private final static String TAG = "IKMAlias";
 
-    enum Type {
+    public enum Type {
         KEYCHAIN("KC_"),
         KEYSTORE("KS_");
 
@@ -121,11 +121,11 @@ public class IKMAlias {
      */
     public boolean matches(@NonNull IKMAlias filter) {
         if (filter.type != null && !filter.type.equals(type)) {
-            Log.d(TAG, "matches: alias " + toString() + " does not match type " + filter.type);
+            Log.d(TAG, "matches: alias " + this + " does not match type " + filter.type);
             return false;
         }
         if (filter.alias != null && !filter.alias.equals(alias)) {
-            Log.d(TAG, "matches: alias " + toString() + " does not match original alias " + filter.alias);
+            Log.d(TAG, "matches: alias " + this + " does not match original alias " + filter.alias);
             return false;
         }
         if (hostname != null && filter.hostname != null && !filter.hostname.equals(hostname)) {
@@ -143,13 +143,13 @@ public class IKMAlias {
             }
             // If resolution succeeded, compare addresses, otherwise host names
             if ((address == null || !address.equals(filterAddress))) {
-                Log.d(TAG, "matches: alias " + toString() + " (address=" + address + ") does not match hostname " +
+                Log.d(TAG, "matches: alias " + this + " (address=" + address + ") does not match hostname " +
                         filter.hostname + " (address=" + filterAddress + ")");
                 return false;
             }
         }
         if (port != null && filter.port != null && !filter.port.equals(port)) {
-            Log.d(TAG, "matches: alias " + toString() + " does not match port " + filter.port);
+            Log.d(TAG, "matches: alias " + this + " does not match port " + filter.port);
             return false;
         }
         return true;

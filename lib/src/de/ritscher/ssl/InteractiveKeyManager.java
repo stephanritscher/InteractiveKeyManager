@@ -57,6 +57,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     private final static int NOTIFICATION_ID = 101319;
 
     private final static String KEYCHAIN_ALIASES = "KeyChainAliases";
+    // TODO: Dynamically generate password and persist it (e.g. in SharedPreferences)
     private final static String KEYSTORE_PASSWORD = "l^=alsk22:,.-32ß091HJK";
 
     private SharedPreferences sharedPreferences;
@@ -89,7 +90,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         toastHandler = new Handler(Looper.getMainLooper()) {
             @Override
-            public void handleMessage(Message message) {
+            public void handleMessage(@NonNull Message message) {
                 Toast.makeText(context, (String) message.obj, Toast.LENGTH_SHORT).show();
             }
         };
@@ -205,6 +206,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     /**
      * Remove all KeyChain and keystore aliases
      */
+    @SuppressWarnings("unused")
     public void removeAllKeys() {
         try {
             removeKeyChain(new IKMAlias(KEYCHAIN, null, null, null));
@@ -221,6 +223,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
      * @param hostname hostname for which the alias shall be used; null for any
      * @param port port for which the alias shall be used (only if hostname is not null); null for any
      */
+    @SuppressWarnings("unused")
     public void removeKeys(String hostname, Integer port) {
         try {
             removeKeyChain(new IKMAlias(KEYCHAIN, null, hostname, port));
@@ -399,8 +402,8 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                     case IKMDecision.DECISION_FILE: // Add key from keystore file for connection
                         Pair<Collection<String>, Collection<String>> aliases;
                         try {
-                            aliases = addKeyStore(decision.param, "password", new
-                                    String[]{"password"}, decision.hostname, decision.port);
+                            aliases = addKeyStore(decision.filename, decision.password, new
+                                    String[]{decision.password}, decision.hostname, decision.port);
                             if (aliases.first == null || aliases.first.isEmpty()) {
                                 throw new KeyStoreException("Could not load any key.");
                             }
@@ -414,7 +417,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                             Log.e(TAG, "chooseAlias(keyTypes=" + Arrays.toString(keyTypes) + ", issuers=" +
                                     Arrays.toString(issuers) + ", hostname=" + hostname + ", port=" + port +
                                     "): Could not load keys " + Arrays.toString(aliases.second.toArray()) + " from file " +
-                                    decision.param);
+                                    decision.filename);
                             toastHandler.obtainMessage(0, context.getString(R.string.ikm_add_from_keystore_alias) + " " +
                                     Arrays.toString(aliases.second.toArray())).sendToTarget();
                         }
@@ -424,7 +427,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
                                 alias);
                         return alias;
                     case IKMDecision.DECISION_KEYCHAIN: // Add keychain alias for connection
-                        alias = addKeyChain(decision.param, decision.hostname, decision.port);
+                        alias = addKeyChain(decision.alias, decision.hostname, decision.port);
                         Log.d(TAG, "chooseAlias(keyTypes=" + Arrays.toString(keyTypes) + ", issuers=" +
                                 Arrays.toString(issuers) + ", hostname=" + hostname + ", port=" + port + "): Use alias " +
                                 alias);
@@ -539,6 +542,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         }
     }
 
+    @SuppressWarnings("unused")
     public void handleWebViewClientCertRequest(@NonNull final ClientCertRequest request) {
         Log.d(TAG, "handleWebViewClientCertRequest(keyTypes=" + Arrays.toString(request.getKeyTypes()) +
                 ", issuers=" + Arrays.toString(request.getPrincipals()) + ", hostname=" + request.getHost() +
@@ -563,6 +567,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         }.start();
     }
 
+    @SuppressWarnings("unused")
     public void handshakeFailed(Socket socket) throws IOException {
         InputStream is = socket.getInputStream();
         int len = is.available();
@@ -588,7 +593,6 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
         return id;
     }
 
-    @SuppressWarnings("deprecation")
     private Notification.Builder getDeprecatedNotificationBuilder(Context ctx) {
         return new Notification.Builder(ctx);
     }
@@ -648,6 +652,7 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
 
         Log.d(TAG, "interactClientCert: openDecisions = " + openDecisions + ", waiting on " + id);
         try {
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (decision) {
                 decision.wait();
             }
@@ -661,16 +666,69 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     }
 
     /**
-     * Callback for SelectKeyStoreActivity to set the decision result.
+     * Callback for SelectKeyStoreActivity to set the decision result abort.
      * @param decisionId decision identifier
-     * @param state type of the result as defined in IKMDecision
-     * @param param keychain alias respectively keystore filename
+     */
+    static void interactResultAbort(int decisionId) {
+        IKMDecision decision;
+        Log.d(TAG, "interactResultAbort(decisionId=" + decisionId);
+        // Get decision object
+        synchronized (openDecisions) {
+            decision = openDecisions.get(decisionId);
+            openDecisions.remove(decisionId);
+        }
+        if (decision == null) {
+            Log.e(TAG, "interactResultAbort: aborting due to stale decision reference!");
+            return;
+        }
+        // Fill in result
+        synchronized (decision) {
+            decision.state = IKMDecision.DECISION_ABORT;
+            decision.notify();
+        }
+    }
+
+    /**
+     * Callback for SelectKeyStoreActivity to set the decision result file.
+     * @param decisionId decision identifier
+     * @param filename keystore filename
      * @param hostname hostname of connection
      * @param port port of connection
      */
-    static void interactResult(int decisionId, int state, String param, String hostname, Integer port) {
+    static void interactResultFile(int decisionId, String filename, String hostname, Integer port, String password) {
         IKMDecision decision;
-        Log.d(TAG, "interactResult(decisionId=" + decisionId + ", state=" + state + ", param=" + param +
+        Log.d(TAG, "interactResultFile(decisionId=" + decisionId + ", filename=" + filename +
+                ", hostname=" + hostname + ", port=" + port + ", password=xxx");
+        // Get decision object
+        synchronized (openDecisions) {
+            decision = openDecisions.get(decisionId);
+            openDecisions.remove(decisionId);
+        }
+        if (decision == null) {
+            Log.e(TAG, "interactResultFile: aborting due to stale decision reference!");
+            return;
+        }
+        // Fill in result
+        synchronized (decision) {
+            decision.state = IKMDecision.DECISION_FILE;
+            decision.filename = filename;
+            decision.hostname = hostname;
+            decision.port = port;
+            decision.password = password;
+            decision.notify();
+        }
+    }
+
+    /**
+     * Callback for SelectKeyStoreActivity to set the decision result keychain.
+     * @param decisionId decision identifier
+     * @param alias keychain alias
+     * @param hostname hostname of connection
+     * @param port port of connection
+     */
+    static void interactResultKeyChain(int decisionId, String alias, String hostname, Integer port) {
+        IKMDecision decision;
+        Log.d(TAG, "interactResultKeyChain(decisionId=" + decisionId + ", alias=" + alias +
                 ", hostname=" + hostname + ", port=" + port);
         // Get decision object
         synchronized (openDecisions) {
@@ -678,13 +736,13 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
             openDecisions.remove(decisionId);
         }
         if (decision == null) {
-            Log.e(TAG, "interactResult: aborting due to stale decision reference!");
+            Log.e(TAG, "interactResultFile: aborting due to stale decision reference!");
             return;
         }
         // Fill in result
         synchronized (decision) {
-            decision.state = state;
-            decision.param = param;
+            decision.state = IKMDecision.DECISION_FILE;
+            decision.alias = alias;
             decision.hostname = hostname;
             decision.port = port;
             decision.notify();
@@ -692,29 +750,29 @@ public class InteractiveKeyManager implements X509KeyManager, Application.Activi
     }
 
     @Override
-    public void onActivityCreated(Activity activity, Bundle savedInstanceState) {}
+    public void onActivityCreated(@NonNull Activity activity, Bundle savedInstanceState) {}
 
     @Override
-    public void onActivityStarted(Activity activity) {}
+    public void onActivityStarted(@NonNull Activity activity) {}
 
     @Override
-    public void onActivityResumed(Activity activity) {
+    public void onActivityResumed(@NonNull Activity activity) {
         foregroundAct = activity;
     }
 
     @Override
-    public void onActivityPaused(Activity activity) {
+    public void onActivityPaused(@NonNull Activity activity) {
         foregroundAct = null;
     }
 
     @Override
-    public void onActivityStopped(Activity activity) {}
+    public void onActivityStopped(@NonNull Activity activity) {}
 
     @Override
-    public void onActivitySaveInstanceState(Activity activity, Bundle outState) {}
+    public void onActivitySaveInstanceState(@NonNull Activity activity, @NonNull Bundle outState) {}
 
     @Override
-    public void onActivityDestroyed(Activity activity) {}
+    public void onActivityDestroyed(@NonNull Activity activity) {}
 
     /**
      * Returns the top-most entry of the activity stack.

@@ -56,8 +56,6 @@ public class SelectKeyStoreActivity extends Activity
     private final static int PERMISSIONS_REQUEST_EXTERNAL_STORAGE_BEFORE_FILE_CHOOSER = 1001;
 
     private int decisionId;
-    private int state = IKMDecision.DECISION_INVALID;
-    private String param = null;
     private String hostname = null;
     private Integer port = null;
 
@@ -82,7 +80,7 @@ public class SelectKeyStoreActivity extends Activity
         final Context context = this;
         toastHandler = new Handler(Looper.getMainLooper()) {
             @Override
-            public void handleMessage(Message message) {
+            public void handleMessage(@NonNull Message message) {
                 Toast.makeText(context, (String) message.obj, Toast.LENGTH_SHORT).show();
             }
         };
@@ -109,16 +107,38 @@ public class SelectKeyStoreActivity extends Activity
     }
 
     /**
-     * Stop the user interaction and send result to invoking InteractiveKeyManager.
-     * @param state type of the result as defined in IKMDecision
-     * @param param keychain alias respectively keystore filename
+     * Stop the user interaction due to abort and send result to invoking InteractiveKeyManager.
+     */
+    void sendDecisionAbort() {
+        Log.d(TAG, "sendDecisionAbort()");
+        decisionDialog.dismiss();
+        InteractiveKeyManager.interactResultAbort(decisionId);
+        finish();
+    }
+
+    /**
+     * Stop the user interaction due to selection of file and send result to invoking InteractiveKeyManager.
+     * @param filename keystore filename
      * @param hostname hostname of connection
      * @param port port of connection
      */
-    void sendDecision(int state, String param, String hostname, Integer port) {
-        Log.d(TAG, "sendDecision(" + state + ", " + param + ", " + hostname + ", " + port + ")");
+    void sendDecisionFile(String filename, String hostname, Integer port, String password) {
+        Log.d(TAG, "sendDecisionFile(" + filename + ", " + hostname + ", " + port + ")");
         decisionDialog.dismiss();
-        InteractiveKeyManager.interactResult(decisionId, state, param, hostname, port);
+        InteractiveKeyManager.interactResultFile(decisionId, filename, hostname, port, password);
+        finish();
+    }
+
+    /**
+     * Stop the user interaction due to selection of KeyChain alias and send result to invoking InteractiveKeyManager.
+     * @param alias keychain alias
+     * @param hostname hostname of connection
+     * @param port port of connection
+     */
+    void sendDecisionKeyChain(String alias, String hostname, Integer port) {
+        Log.d(TAG, "sendDecisionKeyChain(" + alias + ", " + hostname + ", " + port + ")");
+        decisionDialog.dismiss();
+        InteractiveKeyManager.interactResultKeyChain(decisionId, alias, hostname, port);
         finish();
     }
 
@@ -126,7 +146,7 @@ public class SelectKeyStoreActivity extends Activity
     public void onClick(DialogInterface dialog, int btnId) {
         if (dialog == decisionDialog) {
             if (btnId == DialogInterface.BUTTON_NEGATIVE) { // Cancel
-                sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+                sendDecisionAbort();
             }
             // Parse hostname and port
             hostname = null;
@@ -174,7 +194,7 @@ public class SelectKeyStoreActivity extends Activity
 
     @Override
     public void onCancel(DialogInterface dialog) {
-        sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+        sendDecisionAbort();
     }
 
     @Override
@@ -195,7 +215,7 @@ public class SelectKeyStoreActivity extends Activity
             }
             // Permission denied
             Log.w(TAG, "onRequestPermissionsResult(): Permission READ_EXTERNAL_STORAGE was denied.");
-            sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+            sendDecisionAbort();
         }
     }
 
@@ -206,14 +226,12 @@ public class SelectKeyStoreActivity extends Activity
             if (resultCode == Activity.RESULT_OK) {
                 if (data.getData() == null) {
                     Log.w(TAG, "Keystore file chooser returned with OK, but file was null.");
-                    sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+                    sendDecisionAbort();
                 } else {
-                    state = IKMDecision.DECISION_FILE;
-                    param = data.getData().getPath();
-                    sendDecision(state, param, hostname, port);
+                    sendDecisionFile(data.getData().getPath(), hostname, port, "password"); // TODO: Allow to provide password from GUI
                 }
             } else {
-                sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+                sendDecisionAbort();
             }
         }
     }
@@ -223,11 +241,9 @@ public class SelectKeyStoreActivity extends Activity
         // Handle result of keychain alias chooser
         Log.d(TAG, "alias(" + alias + ")");
         if (alias != null) {
-            state = IKMDecision.DECISION_KEYCHAIN;
-            param = alias;
-            sendDecision(state, param, hostname, port);
+            sendDecisionKeyChain(alias, hostname, port);
         } else {
-            sendDecision(IKMDecision.DECISION_ABORT, null, null, null);
+            sendDecisionAbort();
         }
     }
 }

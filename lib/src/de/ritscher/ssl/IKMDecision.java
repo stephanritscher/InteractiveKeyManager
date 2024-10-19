@@ -30,7 +30,9 @@ class IKMDecision {
     public final static int DECISION_FILE = 3;
 
     public int state = DECISION_INVALID;
-    public String param;
+    public String filename;
+    public String alias;
     public String hostname;
     public Integer port;
+    public String password;
 }
